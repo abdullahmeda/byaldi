@@ -303,6 +303,7 @@ class ColPaliModel:
             raise ValueError("index_name must be specified to create a new index.")
 
         index_path = Path(self.index_root) / Path(index_name)
+        index_path.mkdir(parents=True, exist_ok=True)
 
         if store_collection_with_index:
             self.full_document_collection = True
