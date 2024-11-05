@@ -348,6 +348,12 @@ class ColPaliModel:
                 print(f"Indexing file: {item}")
                 doc_id = doc_ids[i] if doc_ids else self.highest_doc_id + 1
                 doc_metadata = metadata[doc_id] if metadata else None
+
+                if store_collection_with_index:
+                    doc_path = collection_path / Path(f"{doc_id}")
+                    doc_path.mkdir(exist_ok=True)
+                    print(f"Creating directory for document {doc_id} @ {str(doc_path)}.")
+
                 self.add_to_index(
                     item,
                     store_collection_with_index,
@@ -356,11 +362,6 @@ class ColPaliModel:
                 )
                 self.doc_ids_to_file_names[doc_id] = str(item)
 
-                if store_collection_with_index:
-                    doc_path = collection_path / Path(f"{doc_id}")
-                    doc_path.mkdir(exist_ok=True)
-                    print(f"Creating directory for document {doc_id} @ {str(doc_path)}.")
-
         else:
             if metadata is not None and len(metadata) != 1:
                 raise ValueError(
@@ -368,6 +369,12 @@ class ColPaliModel:
                 )
             doc_id = doc_ids[0] if doc_ids else self.highest_doc_id + 1
             doc_metadata = metadata[0] if metadata else None
+
+            if store_collection_with_index:
+                doc_path = collection_path / Path(f"{doc_id}")
+                doc_path.mkdir(exist_ok=True)
+                print(f"Creating directory for single image document {doc_id} @ {str(doc_path)}.")
+                
             self.add_to_index(
                 input_path,
                 store_collection_with_index,
@@ -375,11 +382,6 @@ class ColPaliModel:
                 metadata=doc_metadata,
             )
             self.doc_ids_to_file_names[doc_id] = str(input_path)
-
-            if store_collection_with_index:
-                doc_path = collection_path / Path(f"{doc_id}")
-                doc_path.mkdir(exist_ok=True)
-                print(f"Creating directory for single image document {doc_id} @ {str(doc_path)}.")
 
         self._export_index()
         return self.doc_ids_to_file_names
