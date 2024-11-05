@@ -585,7 +585,8 @@ class ColPaliModel:
 
             # self.collection[int(embed_id)] = img_str
 
-            img_pth = f"images/{doc_id}/{page_id}.npy"
+            index_path = Path(self.index_root) / Path(self.index_name)
+            img_pth = index_path / f"collection/{doc_id}/{page_id}.npy"
             self.collection[int(embed_id)] = img_pth
 
             np_arr = np.asarray(image)
