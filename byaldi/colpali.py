@@ -309,7 +309,7 @@ class ColPaliModel:
             self.full_document_collection = True
 
             collection_path = index_path / Path("collection")
-            collection_path.mkdir(exist_ok=True)
+            collection_path.mkdir(parents=True, exist_ok=True)
             print(f"Creating collection directory for storing images @ {str(collection_path)}.")
 
         if index_path.exists():
@@ -351,7 +351,7 @@ class ColPaliModel:
 
                 if store_collection_with_index:
                     doc_path = collection_path / Path(f"{doc_id}")
-                    doc_path.mkdir(exist_ok=True)
+                    doc_path.mkdir(parents=True, exist_ok=True)
                     print(f"Creating directory for document {doc_id} @ {str(doc_path)}.")
 
                 self.add_to_index(
@@ -372,9 +372,9 @@ class ColPaliModel:
 
             if store_collection_with_index:
                 doc_path = collection_path / Path(f"{doc_id}")
-                doc_path.mkdir(exist_ok=True)
+                doc_path.mkdir(parents=True, exist_ok=True)
                 print(f"Creating directory for single image document {doc_id} @ {str(doc_path)}.")
-                
+
             self.add_to_index(
                 input_path,
                 store_collection_with_index,
