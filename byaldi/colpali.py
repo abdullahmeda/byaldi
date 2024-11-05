@@ -11,9 +11,10 @@ import torch
 from colpali_engine.models import ColPaliProcessor, ColQwen2Processor
 from pdf2image import convert_from_path
 from PIL import Image
+import numpy as np
 
 from byaldi.typedefs import ColPaliRequest, Result
-from byaldi.utils import base64_encode_image_list
+from byaldi.utils import base64_encode_image_list, base64_encode_image
 
 
 # Import version directly from the package metadata
@@ -263,11 +264,14 @@ class ColPaliModel:
 
         # Save collection if using in-memory collection
         if self.full_document_collection:
-            collection_path = index_path / "collection"
-            collection_path.mkdir(exist_ok=True)
-            for i in range(0, len(self.collection), 500):
-                chunk = dict(list(self.collection.items())[i : i + 500])
-                srsly.write_gzip_json(collection_path / f"{i}.json.gz", chunk)
+            os.mkdir(index_path / "images")
+            srsly.write_gzip_json(index_path / "collection.json.gz", self.collection)
+
+            # collection_path = index_path / "collection"
+            # collection_path.mkdir(exist_ok=True)
+            # for i in range(0, len(self.collection), 500):
+            #     chunk = dict(list(self.collection.items())[i : i + 500])
+            #     srsly.write_gzip_json(collection_path / f"{i}.json.gz", chunk)
 
         if self.verbose > 0:
             print(f"Index exported to {index_path}")
@@ -297,10 +301,16 @@ class ColPaliModel:
             return None
         if index_name is None:
             raise ValueError("index_name must be specified to create a new index.")
+
+        index_path = Path(self.index_root) / Path(index_name)
+
         if store_collection_with_index:
             self.full_document_collection = True
 
-        index_path = Path(self.index_root) / Path(index_name)
+            collection_path = index_path / Path("collection")
+            collection_path.mkdir(exist_ok=True)
+            print(f"Creating collection directory for storing images @ {str(collection_path)}.")
+
         if index_path.exists():
             if overwrite is False:
                 raise ValueError(
@@ -344,6 +354,12 @@ class ColPaliModel:
                     metadata=doc_metadata,
                 )
                 self.doc_ids_to_file_names[doc_id] = str(item)
+
+                if store_collection_with_index:
+                    doc_path = collection_path / Path(f"{doc_id}")
+                    doc_path.mkdir(exist_ok=True)
+                    print(f"Creating directory for document {doc_id} @ {str(doc_path)}.")
+
         else:
             if metadata is not None and len(metadata) != 1:
                 raise ValueError(
@@ -358,6 +374,11 @@ class ColPaliModel:
                 metadata=doc_metadata,
             )
             self.doc_ids_to_file_names[doc_id] = str(input_path)
+
+            if store_collection_with_index:
+                doc_path = collection_path / Path(f"{doc_id}")
+                doc_path.mkdir(exist_ok=True)
+                print(f"Creating directory for single image document {doc_id} @ {str(doc_path)}.")
 
         self._export_index()
         return self.doc_ids_to_file_names
@@ -531,8 +552,8 @@ class ColPaliModel:
         )
 
         if store_collection_with_index:
-            import base64
-            import io
+            # import base64
+            # import io
 
             # Resize image while maintaining aspect ratio
             if self.max_image_width and self.max_image_height:
@@ -555,11 +576,19 @@ class ColPaliModel:
                     )
                 image = image.resize((new_width, new_height), Image.LANCZOS)
 
-            buffered = io.BytesIO()
-            image.save(buffered, format="PNG")
-            img_str = base64.b64encode(buffered.getvalue()).decode()
+            # buffered = io.BytesIO()
+            # image.save(buffered, format="PNG")
+            # img_str = base64.b64encode(buffered.getvalue()).decode()
 
-            self.collection[int(embed_id)] = img_str
+            # self.collection[int(embed_id)] = img_str
+
+            img_pth = f"images/{doc_id}/{page_id}.npy"
+            self.collection[int(embed_id)] = img_pth
+
+            np_arr = np.asarray(image)
+            with open(img_pth, 'wb') as f:
+                np.save(f, np_arr)
+
 
         # Add metadata
         if metadata:
@@ -611,15 +640,19 @@ class ColPaliModel:
             query_results = []
             for embed_id in top_pages:
                 doc_info = self.embed_id_to_doc_id[int(embed_id)]
+
+                if return_base64_results:
+                    with open(self.collection.get(int(embed_id)), 'rb') as f:
+                        image = Image.fromarray(np.load(f))
+                    base64_str = base64_encode_image(image)
+
                 result = Result(
                     doc_id=doc_info["doc_id"],
                     page_num=int(doc_info["page_id"]),
                     score=float(scores[0][embed_id]),
                     metadata=self.doc_id_to_metadata.get(int(doc_info["doc_id"]), {}),
                     base64=(
-                        self.collection.get(int(embed_id))
-                        if return_base64_results
-                        else None
+                        base64_str if return_base64_results else None
                     ),
                 )
                 query_results.append(result)
