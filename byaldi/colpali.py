@@ -308,9 +308,9 @@ class ColPaliModel:
         if store_collection_with_index:
             self.full_document_collection = True
 
-            collection_path = index_path / Path("collection")
-            collection_path.mkdir(parents=True, exist_ok=True)
-            print(f"Creating collection directory for storing images @ {str(collection_path)}.")
+            # collection_path = index_path / Path("collection")
+            # collection_path.mkdir(parents=True, exist_ok=True)
+            # print(f"Creating collection directory for storing images @ {str(collection_path)}.")
 
         if index_path.exists():
             if overwrite is False:
@@ -349,10 +349,10 @@ class ColPaliModel:
                 doc_id = doc_ids[i] if doc_ids else self.highest_doc_id + 1
                 doc_metadata = metadata[doc_id] if metadata else None
 
-                if store_collection_with_index:
-                    doc_path = collection_path / Path(f"{doc_id}")
-                    doc_path.mkdir(parents=True, exist_ok=True)
-                    print(f"Creating directory for document {doc_id} @ {str(doc_path)}.")
+                # if store_collection_with_index:
+                #     doc_path = collection_path / Path(f"{doc_id}")
+                #     doc_path.mkdir(parents=True, exist_ok=True)
+                #     print(f"Creating directory for document {doc_id} @ {str(doc_path)}.")
 
                 self.add_to_index(
                     item,
@@ -370,10 +370,10 @@ class ColPaliModel:
             doc_id = doc_ids[0] if doc_ids else self.highest_doc_id + 1
             doc_metadata = metadata[0] if metadata else None
 
-            if store_collection_with_index:
-                doc_path = collection_path / Path(f"{doc_id}")
-                doc_path.mkdir(parents=True, exist_ok=True)
-                print(f"Creating directory for single image document {doc_id} @ {str(doc_path)}.")
+            # if store_collection_with_index:
+            #     doc_path = collection_path / Path(f"{doc_id}")
+            #     doc_path.mkdir(parents=True, exist_ok=True)
+            #     print(f"Creating directory for single image document {doc_id} @ {str(doc_path)}.")
 
             self.add_to_index(
                 input_path,
@@ -555,8 +555,8 @@ class ColPaliModel:
         )
 
         if store_collection_with_index:
-            # import base64
-            # import io
+            import base64
+            import io
 
             # Resize image while maintaining aspect ratio
             if self.max_image_width and self.max_image_height:
@@ -579,19 +579,25 @@ class ColPaliModel:
                     )
                 image = image.resize((new_width, new_height), Image.LANCZOS)
 
-            # buffered = io.BytesIO()
-            # image.save(buffered, format="PNG")
-            # img_str = base64.b64encode(buffered.getvalue()).decode()
+            buffered = io.BytesIO()
+            image.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
 
             # self.collection[int(embed_id)] = img_str
 
-            index_path = Path(self.index_root) / Path(self.index_name)
-            img_pth = index_path / f"collection/{doc_id}/{page_id}.npy"
-            self.collection[int(embed_id)] = img_pth
+            img_dir = Path(self.index_root) / Path(self.index_name) / f"collection/{doc_id}"
+            img_dir.mkdir(parents=True, exist_ok=True)
+            self.collection[int(embed_id)] = f"{str(img_dir)}/{page_id}.npy"
 
             np_arr = np.asarray(image)
-            with open(img_pth, 'wb') as f:
+            with open(f"{str(img_dir)}/{page_id}.npy", 'wb') as f:
                 np.save(f, np_arr)
+
+            with open(f"{str(img_dir)}/{page_id}.b64", "w") as file:
+                file.write(img_str)
+
+            image.save(f"{str(img_dir)}/{page_id}.png")
+            image.save(f"{str(img_dir)}/{page_id}.jpg")
 
 
         # Add metadata
