@@ -264,14 +264,7 @@ class ColPaliModel:
 
         # Save collection if using in-memory collection
         if self.full_document_collection:
-            os.mkdir(index_path / "images")
             srsly.write_gzip_json(index_path / "collection.json.gz", self.collection)
-
-            # collection_path = index_path / "collection"
-            # collection_path.mkdir(exist_ok=True)
-            # for i in range(0, len(self.collection), 500):
-            #     chunk = dict(list(self.collection.items())[i : i + 500])
-            #     srsly.write_gzip_json(collection_path / f"{i}.json.gz", chunk)
 
         if self.verbose > 0:
             print(f"Index exported to {index_path}")
@@ -348,12 +341,6 @@ class ColPaliModel:
                 print(f"Indexing file: {item}")
                 doc_id = doc_ids[i] if doc_ids else self.highest_doc_id + 1
                 doc_metadata = metadata[doc_id] if metadata else None
-
-                # if store_collection_with_index:
-                #     doc_path = collection_path / Path(f"{doc_id}")
-                #     doc_path.mkdir(parents=True, exist_ok=True)
-                #     print(f"Creating directory for document {doc_id} @ {str(doc_path)}.")
-
                 self.add_to_index(
                     item,
                     store_collection_with_index,
@@ -369,12 +356,6 @@ class ColPaliModel:
                 )
             doc_id = doc_ids[0] if doc_ids else self.highest_doc_id + 1
             doc_metadata = metadata[0] if metadata else None
-
-            # if store_collection_with_index:
-            #     doc_path = collection_path / Path(f"{doc_id}")
-            #     doc_path.mkdir(parents=True, exist_ok=True)
-            #     print(f"Creating directory for single image document {doc_id} @ {str(doc_path)}.")
-
             self.add_to_index(
                 input_path,
                 store_collection_with_index,
@@ -555,8 +536,6 @@ class ColPaliModel:
         )
 
         if store_collection_with_index:
-            import base64
-            import io
 
             # Resize image while maintaining aspect ratio
             if self.max_image_width and self.max_image_height:
@@ -578,26 +557,13 @@ class ColPaliModel:
                         f"compression {new_width/img_width * new_height/img_height:.2f})",
                     )
                 image = image.resize((new_width, new_height), Image.LANCZOS)
-
-            buffered = io.BytesIO()
-            image.save(buffered, format="PNG")
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-
-            # self.collection[int(embed_id)] = img_str
-
+            
             img_dir = Path(self.index_root) / Path(self.index_name) / f"collection/{doc_id}"
             img_dir.mkdir(parents=True, exist_ok=True)
-            self.collection[int(embed_id)] = f"{str(img_dir)}/{page_id}.npy"
+            
+            self.collection[int(embed_id)] = f"{str(img_dir)}/{page_id}.jpeg"
 
-            np_arr = np.asarray(image)
-            with open(f"{str(img_dir)}/{page_id}.npy", 'wb') as f:
-                np.save(f, np_arr)
-
-            with open(f"{str(img_dir)}/{page_id}.b64", "w") as file:
-                file.write(img_str)
-
-            image.save(f"{str(img_dir)}/{page_id}.png")
-            image.save(f"{str(img_dir)}/{page_id}.jpg")
+            image.save(f"{str(img_dir)}/{page_id}.jpeg")
 
 
         # Add metadata
