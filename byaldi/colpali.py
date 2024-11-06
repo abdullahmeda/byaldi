@@ -108,26 +108,9 @@ class ColPaliModel:
             self.max_image_height = index_config.get("max_image_height", None)
 
             if self.full_document_collection:
-                collection_path = index_path / "collection"
-                json_files = sorted(
-                    collection_path.glob("*.json.gz"),
-                    key=lambda x: int(x.stem.split(".")[0]),
+                self.embed_id_to_doc_id = srsly.read_gzip_json(
+                    index_path / "collection.json.gz"
                 )
-
-                for json_file in json_files:
-                    loaded_data = srsly.read_gzip_json(json_file)
-                    self.collection.update({int(k): v for k, v in loaded_data.items()})
-
-                if self.verbose > 0:
-                    print(
-                        "You are using in-memory collection. This means every image is stored in memory."
-                    )
-                    print(
-                        "You might want to rethink this if you have a large collection!"
-                    )
-                    print(
-                        f"Loaded {len(self.collection)} images from {len(json_files)} JSON files."
-                    )
 
             embeddings_path = index_path / "embeddings"
             embedding_files = sorted(
@@ -560,7 +543,7 @@ class ColPaliModel:
             
             img_dir = Path(self.index_root) / Path(self.index_name) / f"collection/{doc_id}"
             img_dir.mkdir(parents=True, exist_ok=True)
-            
+
             self.collection[int(embed_id)] = f"{str(img_dir)}/{page_id}.jpeg"
 
             image.save(f"{str(img_dir)}/{page_id}.jpeg")
@@ -618,8 +601,7 @@ class ColPaliModel:
                 doc_info = self.embed_id_to_doc_id[int(embed_id)]
 
                 if return_base64_results:
-                    with open(self.collection.get(int(embed_id)), 'rb') as f:
-                        image = Image.fromarray(np.load(f))
+                    image = Image.open(self.collection.get(int(embed_id)))
                     base64_str = base64_encode_image(image)
 
                 result = Result(
