@@ -108,9 +108,10 @@ class ColPaliModel:
             self.max_image_height = index_config.get("max_image_height", None)
 
             if self.full_document_collection:
-                self.embed_id_to_doc_id = srsly.read_gzip_json(
+                loaded_data = srsly.read_gzip_json(
                     index_path / "collection.json.gz"
                 )
+                self.collection.update({int(k): v for k, v in loaded_data.items()})
 
             embeddings_path = index_path / "embeddings"
             embedding_files = sorted(
