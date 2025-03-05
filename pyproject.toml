@@ -28,7 +28,7 @@ maintainers = [
 ]
 
 dependencies = [
-    "git+https://github.com/illuin-tech/colpali-engine.git@main#egg=colpali-engine",
+    "colpali-engine @ git+https://github.com/illuin-tech/colpali",
     "ml-dtypes",
     "mteb==1.6.35",
     "ninja",
